@@ -1,5 +1,6 @@
-module My
-function open(cmds::Cmd, stdio::Base.Redirectable=devnull; write::Bool=false, read::Bool=!write, eread::Bool=false)
+import Base
+
+function Base.open(cmds::Cmd, stdio::Base.Redirectable=devnull; write::Bool=false, read::Bool=!write, eread::Bool=false)
     err = eread ? Base.PipeEndpoint() : stderr
     if read && write
         stdio === devnull || throw(ArgumentError("no stream can be specified for `stdio` in read-write mode"))
@@ -23,9 +24,7 @@ function open(cmds::Cmd, stdio::Base.Redirectable=devnull; write::Bool=false, re
     if eread processes.err = err end
     return processes
 end
-end
 
-import .My
 
 function read_and_process(filename) 
     open(filename, "r") do f
@@ -37,7 +36,7 @@ end
 l = read_and_process("remote-test.jl")
 println(l)
 
-proc = My.open(`ssh localhost julia -e $l`, read=true, eread=true)
+proc = open(`ssh localhost julia -e $l`, read=true, eread=true)
 println(readlines(proc.err))
 println(readlines(proc.out))
 
