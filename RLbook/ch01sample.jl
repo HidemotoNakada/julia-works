@@ -1,6 +1,4 @@
 module rl
-
-
 using StatsBase, DataStructures
 export State, Action, Environment, row_length, column_length, actions
 
@@ -145,6 +143,8 @@ function transit(env::Environment, state::State, action::Action)
 end
 
 end
+
+
 ##
 import Revise
 using Main.rl
