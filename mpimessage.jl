@@ -1,5 +1,6 @@
 using MPIClusterManagers, Distributed
 import MPI
+#include("hooks.jl")
 
 f(x) = x
 
@@ -23,6 +24,8 @@ end
 
 # Check whether a worker accidentally returned
 @assert rank == 0
+
+
 
 K=1024
 M=K * K

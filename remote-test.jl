@@ -8,6 +8,19 @@ println("test")
 
 
 ##
+import UUIDs
+
+UInt128(UUIDs.uuid4())
 
 
-2
+##
+
+a = zeros(UInt8, 100)
+typeof(a)
+
+
+
+tuple([1, 2]...)
+
+
+UInt128
