@@ -20,7 +20,7 @@ import UUIDs
 
 
 module MPI_helper
-export AT, encode, decode, DataStub, rcvDict, mylog
+export AT, encode, decode, DataStub, rcvDict, @mylog
 import MPI
 import Distributed.myid
 
@@ -34,9 +34,14 @@ function get_grank()
     grank
 end
 
-function mylog(val)
-#    grank = get_grank()
-#    println("$grank,$(myid()),$(Threads.threadid()): $val")
+macro mylog(expr) 
+    return :()
+#    return :(_mylog($(esc(expr))))
+end
+
+function _mylog(val)
+    grank = get_grank()
+    println("$grank,$(myid()),$(Threads.threadid()): $val")
 end 
 
 rcvDict = Dict{Tuple{UInt32, UInt8}, Any}()  # key: tuple of rank and mes id
@@ -95,7 +100,7 @@ function replace_arg(arg, mgr, target_rank)
         et = typeof(arg).parameters[1]
         at = AT(d.id, et, length(arg))
         buf = [encode(at)]
-        mylog("sending by MPI")
+        @mylog("sending by MPI: $(length(arg))")
         MPI.Send(buf, mgr.comm, dest=target_rank, tag=1)
         MPI.Send(arg, mgr.comm, dest=target_rank, tag=2)
         return d
@@ -115,6 +120,7 @@ function recover_arg(arg)
 end
 
 function send_msg_hook(w::Worker, msg) 
+    @mylog("msg = $msg")
     if isa(msg, Distributed.CallMsg)
         if haskey(w.manager.j2mpi, w.id)
             target_rank = w.manager.j2mpi[w.id]
@@ -123,7 +129,7 @@ function send_msg_hook(w::Worker, msg)
             msg = Distributed.CallMsg{typeparameter}(msg.f, new_args, msg.kwargs)
         end
     elseif isa(msg, Distributed.ResultMsg)
-        mylog("resultmsg:")
+        @mylog("resultmsg = $msg")
         if haskey(w.manager.j2mpi, w.id)
             target_rank = w.manager.j2mpi[w.id]
         else
@@ -136,13 +142,13 @@ function send_msg_hook(w::Worker, msg)
 end    
 
 function Distributed.handle_msg(msg::CallMsg{:call}, header, r_stream, w_stream, version)
-    mylog("recv = CallMsg :call")
+    @mylog("recv = CallMsg :call")
     args = [recover_arg(arg) for arg in msg.args]
     schedule_call(header.response_oid, ()->invokelatest(msg.f, args...; msg.kwargs...))
 end
 
 function Distributed.handle_msg(msg::CallMsg{:call_fetch}, header, r_stream, w_stream, version)
-    mylog("recv = CallMsg :call_fetch")
+    @mylog("recv = CallMsg :call_fetch")
     args = [recover_arg(arg) for arg in msg.args]
     errormonitor(@async begin
         v = run_work_thunk(()->invokelatest(msg.f, args...; msg.kwargs...), false)
@@ -201,15 +207,16 @@ function MPIClusterManagers.receive_event_loop(mgr::MPIManager)
         (hasdata, stat) = MPI.Iprobe(isdefined(MPI, :ANY_SOURCE) ? MPI.ANY_SOURCE : MPI.MPI_ANY_SOURCE, MPI.ANY_TAG, mgr.comm)
         if hasdata
             from_rank = MPI.Get_source(stat)
-            mylog("stat = $stat, tag = $(stat.tag)")
+            @macroexpand @mylog("stat = $stat, tag = $(stat.tag)")
+            @mylog("stat = $stat, tag = $(stat.tag)")
             if stat.tag == 1   # Receive outbound messages
                 buf = [UInt64(0)]
                 MPI.Recv!(buf, from_rank, 1, mgr.comm)
                 at = decode(buf[1])
-                mylog("mes $(UInt64(buf[1])), $(decode(buf[1]))")
+                @mylog("mes $(UInt64(buf[1])), $(decode(buf[1]))")
                 data_buf = Vector{at.t}(undef, at.l)
                 MPI.Recv!(data_buf, from_rank, 2, mgr.comm)
-                mylog("data")
+                @mylog("data")
                 rcvDict[(UInt32(from_rank), at.id)] = data_buf
             else
                 count = MPI.Get_count(stat, UInt8)
@@ -241,7 +248,7 @@ end
 
 
 function Distributed.manage(mgr::MPIManager, id::Integer, config::WorkerConfig, op::Symbol)
-    mylog("manage : op= $op")
+    @mylog("manage : op= $op")
     if op == :register
         # Retrieve MPI rank from worker
         # TODO: Why is this necessary? The workers already sent their rank.
