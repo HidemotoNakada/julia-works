@@ -1,6 +1,14 @@
 using MPIClusterManagers, Distributed
 import MPI
-#include("hooks.jl")
+
+if length(ARGS) > 0 
+    if ARGS[1] == "--hooked"
+        include("hooks.jl")
+    else
+        println(stderr, "unknown arg $(ARGS[1])")
+        exit()
+    end
+end
 
 f(x) = x
 
@@ -8,19 +16,7 @@ MPI.Init()
 rank = MPI.Comm_rank(MPI.COMM_WORLD)
 size = MPI.Comm_size(MPI.COMM_WORLD)
 
-if length(ARGS) == 0
-    println("Please specify a transport option to use [MPI|TCP]")
-    MPI.Finalize()
-    exit(1)
-elseif ARGS[1] == "TCP"
-    manager = MPIClusterManagers.start_main_loop(TCP_TRANSPORT_ALL) # does not return on worker
-elseif ARGS[1] == "MPI"
-    manager = MPIClusterManagers.start_main_loop(MPI_TRANSPORT_ALL) # does not return on worker
-else
-    println("Valid transport options are [MPI|TCP]")
-    MPI.Finalize()
-    exit(1)
-end
+manager = MPIClusterManagers.start_main_loop(MPI_TRANSPORT_ALL) # does not return on worker
 
 # Check whether a worker accidentally returned
 @assert rank == 0

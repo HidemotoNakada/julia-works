@@ -6,8 +6,14 @@ using MPIClusterManagers, Distributed
 import MPI
 transport = MPI_TRANSPORT_ALL
 
-#include("hooks.jl")
-
+if length(ARGS) > 0 
+    if ARGS[1] == "--hooked"
+        include("hooks.jl")
+    else
+        println(stderr, "unknown arg $(ARGS[1])")
+        exit()
+    end
+end
 include("MyActor2.jl")
 using .MyActor2
 

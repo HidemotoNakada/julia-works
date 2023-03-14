@@ -3,7 +3,15 @@ import MPI
 transport = MPI_TRANSPORT_ALL
 #transport = TCP_TRANSPORT_ALL
 
-#include("hooks.jl")
+if length(ARGS) > 0 
+    if ARGS[1] == "--hooked"
+        include("hooks.jl")
+    else
+        println(stderr, "unknown arg $(ARGS[1])")
+        exit()
+    end
+end
+
 
 function f(x)
 #    println("$(myid()) : f(x)= $x")
