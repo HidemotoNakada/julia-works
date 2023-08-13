@@ -58,11 +58,14 @@ end
 function taskLoop(cn::AbstractChannel, target::Actor)
     while true
         t, arity, rrid = take!(cn)
-        #println("takeLoop: t, arity = $t, $arity")
+        println("takeLoop: t, arity = $t, $arity")
+        if !(arity isa Int)
+            println("arity is not int! $(typeof(arity))")
+            continue
+        end
         args = [take!(cn) for _ in range(1, arity)]
         #println("composing: $t, $args")
 
-        #println("takeLoop: msg = $msg")
         fcn = Distributed.lookup_ref(rrid)
         if t == _Stop
             put!(fcn, nothing)
