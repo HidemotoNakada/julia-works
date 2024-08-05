@@ -58,3 +58,34 @@ using Plots
 x = range(0, 10, length=100)
 y = sin.(x)
 plot(x, y)
+
+
+##
+
+add(a, b) = a + b
+sub(a, b) = a - b
+
+function_table = Dict(1 => add, 2 => sub)
+
+struct message
+    function_id::Int32
+    args::Vector{Int32}
+end
+
+invoke(message, function_table) = function_table[message.function_id](message.args...)
+
+##
+invoke(message(1, [1, 2]), function_table)
+
+
+##
+using BenchmarkTools
+for n in 0.0:0.5:1
+    @benchmark sin($n)
+end
+
+
+
+##
+
+

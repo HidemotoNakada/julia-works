@@ -24,3 +24,7 @@ end
 io = stest(a0)
 seekstart(io)
 a1 = deserialize(io)
+
+
+
+
