@@ -3,26 +3,20 @@ using Serialization
 using BenchmarkTools
 import Base
 
+include("monitored_async.jl")
 
 send_bytes = 32
 recv_bytes = 16
 
 function handle_client(conn)
-    s_buf = zeros(UInt8, send_bytes)
-    r_buf = zeros(UInt8, send_bytes)
     while true
-        readbytes!(conn, s_buf, send_bytes)
-        write(conn, r_buf)
-
-        #        mes = read(conn, Int64)
-#        if mes == -1
-#            break
-#        end
-#        mes = read(conn, Int64)
-#        mes = read(conn, Int64)
-#        mes = read(conn, Int64)
-#        write(conn, mes)
-#        write(conn, mes)
+        mes = read(conn, Int64)
+        if mes == -1
+            break
+        end
+        for _ in range(1, mes)
+            write(conn, 1)
+        end
         flush(conn)
     end
     println("handler exit")
@@ -32,11 +26,14 @@ mutable struct client
     conn::TCPSocket
 end
 
-function call(c0::client, v::Int64)
-    s_buf = zeros(UInt8, send_bytes)
-    r_buf = zeros(UInt8, send_bytes)
-    write(c0.conn, s_buf)
-    readbytes!(c0.conn, r_buf, recv_bytes)
+function call(c0::client, num_items::Int64)
+    write(c0.conn, num_items)
+
+    for _ in range(1, num_items)
+        _ = read(c0.conn, Int64)
+    end
+
+#    readbytes!(c0.conn, r_buf, recv_bytes)
 
     #    println(stderr, "Sending")
 #    write(c0.conn, v)
@@ -50,36 +47,24 @@ function call(c0::client, v::Int64)
 end
 
 function stop_server(c0::client)
-    serialize(c0.conn, -1)
+    write(c0.conn, -1)
 end
 
-function do_client(conn)
+function do_client(conn, num_items)
     c0 = client(conn)
 
     b = @benchmark begin
-        v = call($c0, 1)
+        v = call($c0, $num_items)
     end
     display(b)
 
     stop_server(c0)
 end    
 
-macro monitored_async(expr)
-    quote
-        @async begin
-            t = @async $(esc(expr))
-            try
-                wait(t)
-            catch
-                display(t)
-            end
-        end
-    end
-end
 
 function usage()
     println("Usage: julia naive_pingpong.jl server <port>")
-    println("Usage: julia naive_pingpong.jl client <host> <port>")
+    println("Usage: julia naive_pingpong.jl client <host> <port> num_items")
 end
 
 function main(args)
@@ -99,14 +84,15 @@ function main(args)
             @monitored_async handle_client(conn)
         end
     elseif args[1] == "client"
-        if length(args) != 3 usage() end
+        if length(args) != 4 usage() end
         host = getaddrinfo(args[2], IPv4)
         port = parse(Int64, args[3])
+        num_items = parse(Int64, args[4])
         println(stderr, "$host:$port")
         conn = connect(host, port)
 #        Sockets.nagle(conn, false)
 #        Sockets.quickack(conn, true)
-        @sync do_client(conn)
+        @sync do_client(conn, num_items)
         close(conn)
     else
         usage()

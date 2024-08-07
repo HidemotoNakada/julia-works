@@ -99,6 +99,29 @@ plot!(xlabel="Tree depth", ylabel="Time (ns)")
 ##
 savefig("benchmark.svg")
 ##
+using Plots
 
+libuv = [49541,82875, 137500, 256625, 472229, 955375]
+libuv = libuv / 1000.0
+spent = [14102, 19241, 21656, 24201, 30456, 42330]
+spent = spent / 1000.0
+sizes = [1, 2, 4, 8, 16, 32]
 
+plot(sizes, spent, linewidth=3, label="C")
+#plot!(xscale=:log10)
+plot!(sizes, libuv, linewidth=3, label="julia-libuv")
+plot!(legend=:topleft)
+plot!(xlabel="# of Int64", ylabel="Time (us)")
+plot!(yrange=[0, 1e3])
+plot!(xticks=[1, 4, 8, 16, 32])
 
+savefig("readbench.svg")
+##
+
+io = IOBuffer()
+write(io, 1)
+write(io, 2)
+write(io, 3)
+a = reinterpret(Int64, io.data, 0, 3)
+b = [i for i in a]
+b

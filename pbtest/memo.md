@@ -402,3 +402,96 @@ end
 mpi_rpc はなんと67us
 readがビジーウェイトだから速いぞ!
 これでいいのか。。
+
+
+###
+C でreadの回数を増やしていったときの
+時間を測定。
+
+1回のreadは8バイト。アイテム数を送信しているので
+その分の時間も含む。見るべきなのは増分。
+
+
+1  14102 ns
+2  19241 ns
+8  24201 ns
+16 30456 ns
+32 42330 ns
+
+
+1 14102
+2 19241
+8 24201
+16  30456
+32  42330
+
+nakada@garthim pbtest % julia naive_pingpong_tcp.jl client localhost 4000 1
+127.0.0.1:4000
+BenchmarkTools.Trial: 10000 samples with 1 evaluation.
+ Range (min … max):  41.500 μs … 875.708 μs  ┊ GC (min … max): 0.00% … 0.00%
+ Time  (median):     49.541 μs               ┊ GC (median):    0.00%
+ Time  (mean ± σ):   51.900 μs ±  11.028 μs  ┊ GC (mean ± σ):  0.00% ± 0.00%
+
+       ▂▂▄▅█▂▅▂▁      ▆        ▁                                
+  ▁▃▆▅██████████▆▅▄▄▄▃█▃▆▃▆▅▆▇▅█▄▅▅▃▃▂▃▂▃▂▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁ ▃
+  41.5 μs         Histogram: frequency by time         76.9 μs <
+
+ Memory estimate: 64 bytes, allocs estimate: 4.
+nakada@garthim pbtest % julia naive_pingpong_tcp.jl client localhost 4000 2
+127.0.0.1:4000
+BenchmarkTools.Trial: 10000 samples with 1 evaluation.
+ Range (min … max):  60.584 μs …  1.062 ms  ┊ GC (min … max): 0.00% … 0.00%
+ Time  (median):     82.875 μs              ┊ GC (median):    0.00%
+ Time  (mean ± σ):   86.439 μs ± 22.733 μs  ┊ GC (mean ± σ):  0.00% ± 0.00%
+
+                 █▅▁                                           
+  ▂▁▁▁▂▂▂▃▄▄▅▆▆▆▆████▇▆▅▄▄▃▃▃▃▃▃▃▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂ ▃
+  60.6 μs         Histogram: frequency by time         141 μs <
+
+ Memory estimate: 112 bytes, allocs estimate: 7.
+nakada@garthim pbtest % julia naive_pingpong_tcp.jl client localhost 4000 4
+127.0.0.1:4000
+BenchmarkTools.Trial: 10000 samples with 1 evaluation.
+ Range (min … max):  113.333 μs … 421.250 μs  ┊ GC (min … max): 0.00% … 0.00%
+ Time  (median):     137.500 μs               ┊ GC (median):    0.00%
+ Time  (mean ± σ):   138.865 μs ±  13.189 μs  ┊ GC (mean ± σ):  0.00% ± 0.00%
+
+               ▁      ▂▃█▃▂                                      
+  ▂▁▂▁▁▂▂▂▃▄▆▅██▇▇▇▆▇██████▇█▇▆▅▄▄▄▄▄▃▃▃▃▃▃▃▃▃▃▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂ ▃
+  113 μs           Histogram: frequency by time          179 μs <
+
+ Memory estimate: 176 bytes, allocs estimate: 11.
+nakada@garthim pbtest % julia naive_pingpong_tcp.jl client localhost 4000 8
+127.0.0.1:4000
+BenchmarkTools.Trial: 10000 samples with 1 evaluation.
+ Range (min … max):  220.792 μs …  2.082 ms  ┊ GC (min … max): 0.00% … 0.00%
+ Time  (median):     256.625 μs              ┊ GC (median):    0.00%
+ Time  (mean ± σ):   263.016 μs ± 39.317 μs  ┊ GC (mean ± σ):  0.00% ± 0.00%
+
+            ▁▂▆██▃▃▁▁                                           
+  ▁▁▁▁▁▁▂▂▄██████████▆▆▅▄▄▃▃▃▂▂▂▂▂▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁ ▂
+  221 μs          Histogram: frequency by time          363 μs <
+
+ Memory estimate: 400 bytes, allocs estimate: 25.
+nakada@garthim pbtest % julia naive_pingpong_tcp.jl client localhost 4000 16
+127.0.0.1:4000
+BenchmarkTools.Trial: 10000 samples with 1 evaluation.
+ Range (min … max):  420.208 μs …  51.867 ms  ┊ GC (min … max): 0.00% … 0.00%
+ Time  (median):     472.229 μs               ┊ GC (median):    0.00%
+ Time  (mean ± σ):   497.271 μs ± 567.578 μs  ┊ GC (mean ± σ):  0.00% ± 0.00%
+
+       ▁▄█▄▁                                                     
+  ▁▁▁▁▃██████▅▄▄▃▃▂▂▁▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁ ▂
+  420 μs           Histogram: frequency by time          799 μs <
+
+ Memory estimate: 784 bytes, allocs estimate: 49.
+nakada@garthim pbtest % julia naive_pingpong_tcp.jl client localhost 4000 32
+127.0.0.1:4000
+BenchmarkTools.Trial: 5115 samples with 1 evaluation.
+ Range (min … max):  827.416 μs …   7.087 ms  ┊ GC (min … max): 0.00% … 0.00%
+ Time  (median):     955.375 μs               ┊ GC (median):    0.00%
+ Time  (mean ± σ):   974.893 μs ± 147.654 μs  ┊ GC (mean ± σ):  0.00% ± 0.00%
+
+              ▄██▇▅▃▁                                            
+  ▂▂▂▂▁▂▂▂▁▂▃▇███████▇▇▅▅▄▃▃▃▃▃▂▃▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂ ▃
+  827 μs           Histogram: frequency by time         1.32 ms <
