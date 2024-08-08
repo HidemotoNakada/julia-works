@@ -87,5 +87,13 @@ end
 
 
 ##
+using Printf
 
+a = [1.0, 2.0]
 
+p = reinterpret(UInt8, a)
+for i in 1:sizeof(a)
+    @printf("%02x ", p[i])
+end
+println()
+##
